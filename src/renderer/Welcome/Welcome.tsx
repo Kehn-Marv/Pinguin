@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import WelcomePage from "./WelocmePage";
+import WelcomePage from "./WelcomePage";
 
 type PropsType = {
   children: React.JSX.Element;
