@@ -65,8 +65,6 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-      # This checks out the repo with all pre-bundled binaries already in place
-      # The binaries in extraResources/*/win32-arm64/ are committed to git
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -82,7 +80,7 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Bundle Python runtime (ARM64)
+    - name: Bundle Python runtime (ARM64 using x64 Python)
       run: npm run bundle-python -- --arch=arm64
     
     - name: Prepare Python backend
@@ -90,8 +88,6 @@ jobs:
     
     - name: Verify binaries exist
       run: |
-        # Verify that pre-bundled binaries are present in the repo
-        # These binaries are already committed to git, not downloaded during CI
         if (!(Test-Path "extraResources/ollama/win32-arm64/ollama.exe")) {
           Write-Error "Ollama ARM64 binary not found!"
           exit 1
@@ -104,14 +100,11 @@ jobs:
           Write-Error "Python ARM64 runtime not found!"
           exit 1
         }
-        Write-Host "All ARM64 binaries verified"
+        Write-Host "All ARM64 binaries verified ✓"
       shell: pwsh
     
     - name: Build application (ARM64)
       run: npm run make -- --arch=arm64
-      # This packages the app for ARM64 and includes all binaries from win32-arm64 folders
-      # Note: Tesseract and Poppler are x64 binaries that will run via Windows emulation
-      # Windows 11 ARM64 has built-in x64 emulation - no special setup needed!
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     

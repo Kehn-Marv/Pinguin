@@ -11,6 +11,9 @@ transformers>=4.30.0
 langchain==0.1.6
 langchain-community==0.0.19
 
+# Vector database
+chromadb==0.4.22
+
 # Document extraction
 PyPDF2==3.0.1
 pdfplumber==0.10.3
