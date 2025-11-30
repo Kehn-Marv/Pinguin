@@ -97,6 +97,15 @@ typings/
 # Electron-Forge
 out/
 
+# Extra Resources - Downloaded by setup scripts
+extraResources/ollama/
+extraResources/tesseract/
+extraResources/poppler/
+
+# Python runtime - Downloaded and bundled by build scripts
+python-runtime/
+temp/
+
 # IDE and Editor
 .kiro/
 .vscode/

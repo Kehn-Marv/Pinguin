@@ -23,6 +23,7 @@ const config: ForgeConfig = {
       "./extraResources/tesseract",
       "./extraResources/poppler",
       "./backend",
+      "./python-runtime",
     ],
     // Removed custom ignore - webpack plugin handles this automatically
     // Backend files are already in extraResource, so they'll be packaged separately

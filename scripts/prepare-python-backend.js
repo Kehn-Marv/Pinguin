@@ -1,6 +1,9 @@
 /**
  * Script to prepare Python backend for packaging
  * This script ensures Python dependencies are bundled correctly
+ * 
+ * For development: Creates a venv and installs dependencies
+ * For production build: Uses bundled Python runtime
  */
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -11,8 +14,22 @@ const path = require('path');
 
 const backendDir = path.join(__dirname, '..', 'backend');
 const venvDir = path.join(backendDir, 'venv');
+const pythonRuntimeDir = path.join(__dirname, '..', 'python-runtime');
 
 console.log('Preparing Python backend for packaging...');
+
+// Check if we're in production build mode (bundled runtime exists)
+const isProductionBuild = fs.existsSync(pythonRuntimeDir) && 
+                          fs.readdirSync(pythonRuntimeDir).some(dir => dir.startsWith('win32-'));
+
+if (isProductionBuild) {
+  console.log('✓ Using bundled Python runtime for production build');
+  console.log('✓ Python backend prepared successfully!');
+  process.exit(0);
+}
+
+// Development mode: Create venv and install dependencies
+console.log('Development mode: Setting up virtual environment...');
 
 // Check if Python 3.11 is available
 let pythonCommand = null;
@@ -62,4 +79,4 @@ try {
   process.exit(1);
 }
 
-console.log('Python backend prepared successfully!');
+console.log('✓ Python backend prepared successfully!');

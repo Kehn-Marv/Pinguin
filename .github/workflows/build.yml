@@ -26,6 +26,9 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
+    - name: Bundle Python runtime (x64)
+      run: npm run bundle-python -- --arch=x64
+    
     - name: Prepare Python backend
       run: npm run prepare-backend
     
@@ -37,6 +40,10 @@ jobs:
         }
         if (!(Test-Path "extraResources/tesseract/win32-x64/tesseract.exe")) {
           Write-Error "Tesseract x64 binary not found!"
+          exit 1
+        }
+        if (!(Test-Path "python-runtime/win32-x64/python.exe")) {
+          Write-Error "Python x64 runtime not found!"
           exit 1
         }
         Write-Host "All x64 binaries verified ✓"
@@ -75,6 +82,9 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
+    - name: Bundle Python runtime (ARM64)
+      run: npm run bundle-python -- --arch=arm64
+    
     - name: Prepare Python backend
       run: npm run prepare-backend
     
@@ -88,6 +98,10 @@ jobs:
         }
         if (!(Test-Path "extraResources/tesseract/win32-arm64/tesseract.exe")) {
           Write-Error "Tesseract ARM64 binary not found!"
+          exit 1
+        }
+        if (!(Test-Path "python-runtime/win32-arm64/python.exe")) {
+          Write-Error "Python ARM64 runtime not found!"
           exit 1
         }
         Write-Host "All ARM64 binaries verified"
@@ -119,6 +133,7 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: ${{ github.ref_name }}
         files: |
           windows-x64-installer/**/*.exe
           windows-arm64-installer/**/*.exe

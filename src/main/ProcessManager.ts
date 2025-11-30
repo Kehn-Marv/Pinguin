@@ -516,12 +516,35 @@ class ProcessManager {
    */
   private getPythonPath(): string {
     if (app.isPackaged) {
-      // Use bundled Python runtime
+      // Use bundled Python runtime with architecture detection
+      const arch = process.arch; // 'x64', 'arm64', etc.
+      let platformFolder = "";
+      
       if (process.platform === "win32") {
-        return path.join(process.resourcesPath, "python", "python.exe");
+        platformFolder = `win32-${arch}`;
+      } else if (process.platform === "darwin") {
+        platformFolder = `darwin-${arch}`;
+      } else if (process.platform === "linux") {
+        platformFolder = `linux-${arch}`;
       } else {
-        return path.join(process.resourcesPath, "python", "bin", "python3");
+        throw new Error(`Unsupported platform for Python: ${process.platform}`);
       }
+      
+      const pythonPath = path.join(
+        process.resourcesPath,
+        "python-runtime",
+        platformFolder,
+        process.platform === "win32" ? "python.exe" : "bin/python3"
+      );
+      
+      log(`Resolved Python path (${process.platform}-${arch}): ${pythonPath}`);
+      
+      // Verify Python exists
+      if (!fs.existsSync(pythonPath)) {
+        throw new Error(`Python runtime not found at: ${pythonPath}`);
+      }
+      
+      return pythonPath;
     } else {
       // Use virtual environment Python in development
       const backendPath = this.getBackendPath();
