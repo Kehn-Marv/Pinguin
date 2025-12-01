@@ -2,26 +2,11 @@
 RAG (Retrieval Augmented Generation) pipeline components
 """
 
-from .chunker_v2 import (
-    Chunk,
-    DocumentSection,
-    SemanticChunker,
-    TextbookChunker,
-    SlideChunker,
-    ScannedPDFChunker,
-    create_chunker
-)
-
+# Import only what actually exists and is used
 from .embedder import Embedder
-
-from .ingest_v2 import IngestPipeline, IngestResult
-
-from .retriever import Retriever, RetrievalConfig
-
+from .retriever import Retriever
 from .mode_config import ModeConfig, MODE_CONFIGS, get_mode_config
-
-from .prompt_builder import PromptBuilder, ChatMessage as PromptChatMessage, construct_prompt
-
+from .prompt_builder import PromptBuilder, construct_prompt
 from .ollama_client import (
     OllamaClient,
     OllamaModel,
@@ -30,27 +15,19 @@ from .ollama_client import (
     OllamaConnectionError,
     OllamaModelNotFoundError
 )
-
 from .chat_history import ChatHistoryManager, ChatMessage
 
+# V2 modules - import directly when needed
+# from .chunker_v2 import EnhancedChunk, EnhancedSemanticChunker
+# from .ingest_v2 import EnhancedIngestPipeline
+
 __all__ = [
-    'Chunk',
-    'DocumentSection',
-    'SemanticChunker',
-    'TextbookChunker',
-    'SlideChunker',
-    'ScannedPDFChunker',
-    'create_chunker',
     'Embedder',
-    'IngestPipeline',
-    'IngestResult',
     'Retriever',
-    'RetrievalConfig',
     'ModeConfig',
     'MODE_CONFIGS',
     'get_mode_config',
     'PromptBuilder',
-    'PromptChatMessage',
     'construct_prompt',
     'OllamaClient',
     'OllamaModel',
