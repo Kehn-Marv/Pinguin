@@ -25,8 +25,18 @@ const config: ForgeConfig = {
       "./backend",
       "./python-runtime",
     ],
-    // Removed custom ignore - webpack plugin handles this automatically
-    // Backend files are already in extraResource, so they'll be packaged separately
+    // Don't ignore Python files in backend
+    ignore: (file) => {
+      // Don't package node_modules, .git, etc. but DO package backend Python files
+      if (file.includes('/backend/') || file.includes('\\backend\\')) {
+        return false; // Don't ignore backend files
+      }
+      if (file.includes('/python-runtime/') || file.includes('\\python-runtime\\')) {
+        return false; // Don't ignore python-runtime files
+      }
+      // Default ignores
+      return /node_modules|\.git|\.vscode|\.kiro/.test(file);
+    },
   },
   rebuildConfig: {},
   makers: [

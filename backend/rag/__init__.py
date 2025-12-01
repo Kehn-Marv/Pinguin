@@ -2,7 +2,7 @@
 RAG (Retrieval Augmented Generation) pipeline components
 """
 
-from .chunker import (
+from .chunker_v2 import (
     Chunk,
     DocumentSection,
     SemanticChunker,
@@ -14,7 +14,7 @@ from .chunker import (
 
 from .embedder import Embedder
 
-from .ingest import IngestPipeline, IngestResult
+from .ingest_v2 import IngestPipeline, IngestResult
 
 from .retriever import Retriever, RetrievalConfig
 
