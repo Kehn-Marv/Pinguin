@@ -386,13 +386,29 @@ class ProcessManager {
         
         this.killProcess(this.pythonBackend);
         
-        // Provide detailed error message
-        let errorMessage = "Python backend failed health check after 30 seconds.";
-        if (errorDetails) {
-          errorMessage += `\n\nPython Error:\n${errorDetails.substring(0, 500)}`;
+        // Analyze error and provide helpful message
+        let errorMessage = "Python backend failed health check";
+        let userFriendlyMessage = "";
+        
+        if (errorDetails.includes("ModuleNotFoundError") || errorDetails.includes("ImportError")) {
+          userFriendlyMessage = "Python dependencies are missing or corrupted. Please reinstall the application.";
+        } else if (errorDetails.includes("Errno 10048") || errorDetails.includes("address already in use")) {
+          userFriendlyMessage = "Port 8000 is already in use. Please close other applications and try again.";
+        } else if (errorDetails.includes("Permission denied") || errorDetails.includes("Access is denied")) {
+          userFriendlyMessage = "Permission denied. Try running Pinguin as Administrator.";
+        } else if (errorDetails.includes("ChromaDB") || errorDetails.includes("chromadb")) {
+          userFriendlyMessage = "Database initialization failed. Try restarting the application.";
+        } else if (errorDetails) {
+          userFriendlyMessage = "An error occurred during startup. Check the logs for details.";
+        } else {
+          userFriendlyMessage = "The backend service failed to start. This may be due to missing dependencies or system configuration issues.";
         }
-        if (outputDetails && !errorDetails) {
-          errorMessage += `\n\nOutput:\n${outputDetails.substring(0, 500)}`;
+        
+        errorMessage = userFriendlyMessage;
+        
+        // Add technical details to logs only
+        if (errorDetails) {
+          log(`Technical details: ${errorDetails.substring(0, 1000)}`);
         }
         
         throw new Error(errorMessage);
@@ -497,6 +513,10 @@ class ProcessManager {
         PATH: pathEnv,
         EMBEDDING_MODEL: activeEmbeddingModel,
         OLLAMA_HOST: this.ollama.host || "http://localhost:11434",
+        // Disable LangChain telemetry to prevent errors
+        LANGCHAIN_TRACING_V2: "false",
+        LANGCHAIN_ENDPOINT: "",
+        LANGCHAIN_API_KEY: "",
         ...(tesseractCmd && { TESSERACT_CMD: tesseractCmd }),
         ...(tessdataPrefix && { TESSDATA_PREFIX: tessdataPrefix }),
       };
@@ -526,6 +546,14 @@ class ProcessManager {
         const error = data.toString();
         startupError += error;
         log(`Python backend stderr: ${error}`);
+        
+        // Check for critical errors that indicate startup failure
+        if (error.includes("ModuleNotFoundError") || error.includes("ImportError")) {
+          log("CRITICAL: Python module import failed - dependencies may be missing");
+        }
+        if (error.includes("ChromaDB") || error.includes("chromadb")) {
+          log("WARNING: ChromaDB error detected");
+        }
       });
 
       pythonProcess.on("error", (error) => {

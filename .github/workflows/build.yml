@@ -27,7 +27,13 @@ jobs:
       run: npm ci
     
     - name: Bundle Python runtime (x64)
-      run: npm run bundle-python -- --arch=x64
+      run: |
+        npm run bundle-python -- --arch=x64
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Python bundling failed!"
+          exit 1
+        }
+      shell: pwsh
     
     - name: Prepare Python backend
       run: npm run prepare-backend
@@ -47,6 +53,29 @@ jobs:
           exit 1
         }
         Write-Host "All x64 binaries verified ✓"
+      shell: pwsh
+    
+    - name: Verify Python dependencies
+      run: |
+        Write-Host "Verifying Python dependencies..."
+        $pythonExe = "python-runtime/win32-x64/python.exe"
+        $criticalModules = @("fastapi", "uvicorn", "chromadb", "sentence_transformers", "langchain")
+        
+        foreach ($module in $criticalModules) {
+          try {
+            & $pythonExe -c "import $module" 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "  ✓ $module"
+            } else {
+              Write-Error "$module import failed!"
+              exit 1
+            }
+          } catch {
+            Write-Error "$module not found!"
+            exit 1
+          }
+        }
+        Write-Host "All Python dependencies verified ✓"
       shell: pwsh
     
     - name: Build application (x64)
@@ -81,7 +110,13 @@ jobs:
       run: npm ci
     
     - name: Bundle Python runtime (ARM64 using x64 Python)
-      run: npm run bundle-python -- --arch=arm64
+      run: |
+        npm run bundle-python -- --arch=arm64
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Python bundling failed!"
+          exit 1
+        }
+      shell: pwsh
     
     - name: Prepare Python backend
       run: npm run prepare-backend
@@ -101,6 +136,29 @@ jobs:
           exit 1
         }
         Write-Host "All ARM64 binaries verified ✓"
+      shell: pwsh
+    
+    - name: Verify Python dependencies
+      run: |
+        Write-Host "Verifying Python dependencies..."
+        $pythonExe = "python-runtime/win32-arm64/python.exe"
+        $criticalModules = @("fastapi", "uvicorn", "chromadb", "sentence_transformers", "langchain")
+        
+        foreach ($module in $criticalModules) {
+          try {
+            & $pythonExe -c "import $module" 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "  ✓ $module"
+            } else {
+              Write-Error "$module import failed!"
+              exit 1
+            }
+          } catch {
+            Write-Error "$module not found!"
+            exit 1
+          }
+        }
+        Write-Host "All Python dependencies verified ✓"
       shell: pwsh
     
     - name: Build application (ARM64)

@@ -23,6 +23,8 @@
     "setup-architecture-binaries": "powershell -ExecutionPolicy Bypass -File scripts/setup-architecture-binaries.ps1",
     "verify-tesseract": "node scripts/verify-tesseract-setup.js",
     "verify-build-config": "node scripts/verify-build-config.js",
+    "diagnose-backend": "node scripts/diagnose-python-backend.js",
+    "diagnose-backend-packaged": "node scripts/diagnose-python-backend.js --packaged",
     "prebuild": "npm run prepare-backend && npm run setup-tesseract && npm run setup-tesseract-dlls && npm run setup-poppler",
     "build": "npm run package"
   },
