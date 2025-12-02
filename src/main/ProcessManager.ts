@@ -375,8 +375,27 @@ class ProcessManager {
         log("Python backend started successfully");
       } else {
         this.pythonBackend.status = "crashed";
+        
+        // Capture error details before killing process
+        const errorDetails = (this.pythonBackend as any).lastError || "";
+        const outputDetails = (this.pythonBackend as any).lastOutput || "";
+        
+        log("=== Python Backend Failed to Start ===");
+        log(`Error output: ${errorDetails}`);
+        log(`Standard output: ${outputDetails}`);
+        
         this.killProcess(this.pythonBackend);
-        throw new Error("Python backend failed health check");
+        
+        // Provide detailed error message
+        let errorMessage = "Python backend failed health check after 30 seconds.";
+        if (errorDetails) {
+          errorMessage += `\n\nPython Error:\n${errorDetails.substring(0, 500)}`;
+        }
+        if (outputDetails && !errorDetails) {
+          errorMessage += `\n\nOutput:\n${outputDetails.substring(0, 500)}`;
+        }
+        
+        throw new Error(errorMessage);
       }
     } catch (error: unknown) {
       this.pythonBackend.status = "crashed";
@@ -389,8 +408,31 @@ class ProcessManager {
    */
   private async spawnPythonBackend(embeddingModel?: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Pre-flight checks
       const pythonPath = this.getPythonPath();
       const backendPath = this.getBackendPath();
+      
+      log("=== Python Backend Pre-flight Checks ===");
+      log(`Python path: ${pythonPath}`);
+      log(`Backend path: ${backendPath}`);
+      log(`Python exists: ${fs.existsSync(pythonPath)}`);
+      log(`Backend exists: ${fs.existsSync(backendPath)}`);
+      log(`server.py exists: ${fs.existsSync(path.join(backendPath, "server.py"))}`);
+      
+      // Verify critical files exist
+      if (!fs.existsSync(pythonPath)) {
+        const error = `Python runtime not found at: ${pythonPath}`;
+        log(`ERROR: ${error}`);
+        reject(new Error(error));
+        return;
+      }
+      
+      if (!fs.existsSync(path.join(backendPath, "server.py"))) {
+        const error = `Backend server.py not found at: ${path.join(backendPath, "server.py")}`;
+        log(`ERROR: ${error}`);
+        reject(new Error(error));
+        return;
+      }
       
       // Use provided embedding model or default
       const activeEmbeddingModel = embeddingModel || "nomic-embed-text:v1.5";
@@ -459,6 +501,10 @@ class ProcessManager {
         ...(tessdataPrefix && { TESSDATA_PREFIX: tessdataPrefix }),
       };
 
+      // Capture startup errors
+      let startupError = "";
+      let startupOutput = "";
+      
       const pythonProcess = spawn(
         pythonPath,
         [path.join(backendPath, "server.py")],
@@ -471,26 +517,40 @@ class ProcessManager {
       );
 
       pythonProcess.stdout?.on("data", (data) => {
-        log(`Python backend stdout: ${data}`);
+        const output = data.toString();
+        startupOutput += output;
+        log(`Python backend stdout: ${output}`);
       });
 
       pythonProcess.stderr?.on("data", (data) => {
-        log(`Python backend stderr: ${data}`);
+        const error = data.toString();
+        startupError += error;
+        log(`Python backend stderr: ${error}`);
       });
 
       pythonProcess.on("error", (error) => {
         log(`Python backend process error: ${error.message}`);
-        reject(error);
+        log(`Startup error output: ${startupError}`);
+        reject(new Error(`Failed to spawn Python process: ${error.message}\n${startupError}`));
       });
 
       pythonProcess.on("exit", (code, signal) => {
         log(`Python backend exited with code ${code} and signal ${signal}`);
+        if (code !== 0 && code !== null) {
+          log(`Python backend startup failed with exit code ${code}`);
+          log(`Error output: ${startupError}`);
+          log(`Standard output: ${startupOutput}`);
+        }
         if (this.pythonBackend.status === "running") {
           this.handleServiceCrash(this.pythonBackend, "python");
         }
       });
 
       this.pythonBackend.process = pythonProcess;
+      
+      // Store error output for later retrieval
+      (this.pythonBackend as any).lastError = startupError;
+      (this.pythonBackend as any).lastOutput = startupOutput;
       
       // Register with process monitor
       const processMonitor = getProcessMonitor();
@@ -765,6 +825,16 @@ class ProcessManager {
     return service === "ollama"
       ? this.ollama.status
       : this.pythonBackend.status;
+  }
+
+  /**
+   * Get last error from Python backend for debugging
+   */
+  public getPythonBackendError(): { error: string; output: string } {
+    return {
+      error: (this.pythonBackend as any).lastError || "",
+      output: (this.pythonBackend as any).lastOutput || "",
+    };
   }
 
   /**

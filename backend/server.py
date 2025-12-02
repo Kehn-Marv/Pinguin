@@ -63,25 +63,15 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting Pinguin backend server")
     
-    chroma_ok = False
     try:
         # Initialize ChromaDB client
         chroma_client = ChromaClient()
         logger.info("ChromaDB client initialized")
         
-        # Verify ChromaDB is healthy — but don't abort server startup if it's not.
-        try:
-            chroma_ok = chroma_client.is_healthy()
-        except Exception as e:
-            chroma_ok = False
-            logger.exception("ChromaDB health check raised an exception (will start in degraded mode)", error=str(e))
-        
-        if not chroma_ok:
-            # Log and continue — start the server in degraded mode.
-            # APIs that depend on ChromaDB should return 503 as appropriate.
-            logger.warning("ChromaDB health check failed or ChromaDB unavailable. Starting backend in degraded mode.")
-        else:
-            logger.info("ChromaDB health check passed")
+        # Verify ChromaDB is healthy
+        if not chroma_client.is_healthy():
+            logger.error("ChromaDB health check failed")
+            raise Exception("ChromaDB is not healthy")
         
         # Initialize embedder (uses Ollama embedding model from environment variable)
         embedding_model = os.environ.get("EMBEDDING_MODEL", "")
@@ -89,8 +79,8 @@ async def lifespan(app: FastAPI):
         
         if not embedding_model:
             logger.warning("No embedding model configured - embedder will not be initialized")
-            embedder = None
             logger.warning("Please select and download an embedding model in the app settings")
+            embedder = None
         else:
             embedder = Embedder(
                 model_name=embedding_model,
@@ -101,8 +91,8 @@ async def lifespan(app: FastAPI):
             )
             logger.info(f"Embedder initialized with Ollama model: {embedding_model}")
         
-        # Initialize enhanced ingest pipeline (v2) and retriever only if embedder available AND ChromaDB is healthy
-        if embedder and chroma_ok:
+        # Initialize enhanced ingest pipeline (v2) - only if embedder is available
+        if embedder:
             ingest_pipeline = EnhancedIngestPipeline(
                 chroma_client=chroma_client,
                 embedder=embedder,
@@ -125,14 +115,13 @@ async def lifespan(app: FastAPI):
         else:
             ingest_pipeline = None
             retriever = None
-            logger.warning("Ingest pipeline and retriever not initialized (embedder or ChromaDB unavailable)")
+            logger.warning("Ingest pipeline and retriever not initialized (no embedding model)")
         
-        logger.info("Pinguin backend server started (mode=%s)", "healthy" if chroma_ok else "degraded")
+        logger.info("Pinguin backend server started successfully")
     
     except Exception as e:
-        # If an unexpected error occurs here, log it but try to continue where possible.
-        # This catch is to prevent unexpected exceptions from preventing the server from binding.
-        logger.exception("Failed to fully initialize some components during startup; starting in degraded mode", error=str(e))
+        logger.exception("Failed to start server")
+        raise
     
     yield
     
@@ -243,10 +232,7 @@ async def health_check():
     chroma_ready = False
     
     if chroma_client:
-        try:
-            chroma_ready = chroma_client.is_healthy()
-        except Exception:
-            chroma_ready = False
+        chroma_ready = chroma_client.is_healthy()
     
     logger.debug("Health check", chroma_ready=chroma_ready)
     
