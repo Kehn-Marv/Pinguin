@@ -29,8 +29,8 @@ class ProcessManager {
   private pythonBackend: ServiceConfig;
   private readonly OLLAMA_PORT_RANGE = { start: 11434, end: 11440 };
   private readonly PYTHON_PORT = 8000;
-  private readonly HEALTH_CHECK_TIMEOUT = 600000; // 600 seconds (10 minutes - very generous for slow machines)
-  private readonly HEALTH_CHECK_INTERVAL = 2000; // 2 seconds (log less frequently)
+  private readonly HEALTH_CHECK_TIMEOUT = 60000; // 60 seconds (increased for slow machines)
+  private readonly HEALTH_CHECK_INTERVAL = 1000; // 1 second
 
   private constructor() {
     this.ollama = {
