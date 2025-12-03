@@ -54,6 +54,69 @@ ingest_pipeline: EnhancedIngestPipeline = None
 retriever: Retriever = None
 document_store: dict = {}  # In-memory document metadata store
 
+# Lazy initialization flag
+_embedder_initialized = False
+
+
+def ensure_embedder_initialized():
+    """
+    Lazy initialization of embedder, ingest pipeline, and retriever.
+    Called on first use to speed up startup.
+    """
+    global embedder, ingest_pipeline, retriever, _embedder_initialized
+    
+    if _embedder_initialized:
+        return
+    
+    logger.info("Performing lazy initialization of embedder and pipelines...")
+    
+    embedding_model = os.environ.get("EMBEDDING_MODEL", "")
+    ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    
+    if not embedding_model:
+        logger.error("No embedding model configured")
+        raise Exception("No embedding model configured. Please select one in Settings.")
+    
+    try:
+        # Initialize embedder
+        embedder = Embedder(
+            model_name=embedding_model,
+            batch_size=32,
+            ollama_host=ollama_host,
+            enable_cache=True,
+            cache_size=1000
+        )
+        logger.info(f"Embedder initialized with model: {embedding_model}")
+        
+        # Initialize ingest pipeline
+        if chroma_client:
+            ingest_pipeline = EnhancedIngestPipeline(
+                chroma_client=chroma_client,
+                embedder=embedder,
+                use_enhanced_extractors=True,
+                use_enhanced_chunker=True,
+                use_ocr=True,
+                validate_files=True
+            )
+            logger.info("Ingest pipeline initialized")
+            
+            # Initialize retriever
+            retriever = Retriever(
+                chroma_client=chroma_client,
+                embedder=embedder,
+                enable_cache=True,
+                cache_size=100,
+                cache_ttl=300
+            )
+            logger.info("Retriever initialized")
+        
+        _embedder_initialized = True
+        logger.info("Lazy initialization complete")
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize embedder: {e}")
+        raise
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -82,30 +145,20 @@ async def lifespan(app: FastAPI):
             logger.warning("Starting without ChromaDB - features will be limited")
         
         # Initialize embedder (uses Ollama embedding model from environment variable)
+        # SKIP EMBEDDER INITIALIZATION DURING STARTUP FOR FAST BOOT
+        # Embedder will be initialized lazily on first use
         embedding_model = os.environ.get("EMBEDDING_MODEL", "")
         ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
         
         if not embedding_model:
             logger.warning("No embedding model configured - embedder will not be initialized")
             logger.warning("Please select and download an embedding model in the app settings")
-            embedder = None
         else:
-            try:
-                # Try to initialize embedder with a short timeout
-                # If it fails, we'll initialize it later
-                logger.info(f"Attempting to initialize embedder with model: {embedding_model}")
-                embedder = Embedder(
-                    model_name=embedding_model,
-                    batch_size=32,
-                    ollama_host=ollama_host,
-                    enable_cache=True,
-                    cache_size=1000
-                )
-                logger.info(f"Embedder initialized successfully with Ollama model: {embedding_model}")
-            except Exception as e:
-                logger.warning(f"Failed to initialize embedder during startup: {e}")
-                logger.warning("Embedder will be initialized on first use")
-                embedder = None
+            logger.info(f"Embedder will be initialized lazily with model: {embedding_model}")
+            logger.info("This speeds up startup - embedder loads on first document operation")
+        
+        # Set embedder to None - will be initialized on first use
+        embedder = None
         
         # Initialize enhanced ingest pipeline (v2) - only if embedder is available
         if embedder:
@@ -280,10 +333,13 @@ async def ingest_document(request: IngestRequest):
         file_path=request.file_path
     )
     
-    if not ingest_pipeline or not embedder:
+    # Lazy initialization of embedder on first use
+    try:
+        ensure_embedder_initialized()
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="No embedding model configured. Please select and download an embedding model in Settings."
+            detail=f"Failed to initialize embedder: {str(e)}. Please select and download an embedding model in Settings."
         )
     
     try:
@@ -417,10 +473,13 @@ async def query_documents(request: QueryRequest):
         top_k=request.top_k
     )
     
-    if not retriever or not embedder:
+    # Lazy initialization of embedder on first use
+    try:
+        ensure_embedder_initialized()
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="No embedding model configured. Please select and download an embedding model in Settings."
+            detail=f"Failed to initialize embedder: {str(e)}. Please select and download an embedding model in Settings."
         )
     
     try:
