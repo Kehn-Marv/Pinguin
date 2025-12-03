@@ -39,7 +39,7 @@ class StartupManager {
   private mainWindow: BrowserWindow | null = null;
   private splashWindow: BrowserWindow | null = null;
   private currentStatus: StartupStatus = "initializing";
-  private readonly STARTUP_TIMEOUT = 60000; // 60 seconds per service
+  private readonly STARTUP_TIMEOUT = 120000; // 120 seconds per service (for model loading)
 
   private constructor() {
     this.configStore = ConfigStore.getInstance();

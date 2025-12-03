@@ -64,14 +64,22 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Pinguin backend server")
     
     try:
-        # Initialize ChromaDB client
-        chroma_client = ChromaClient()
-        logger.info("ChromaDB client initialized")
-        
-        # Verify ChromaDB is healthy
-        if not chroma_client.is_healthy():
-            logger.error("ChromaDB health check failed")
-            raise Exception("ChromaDB is not healthy")
+        # Initialize ChromaDB client with timeout protection
+        logger.info("Initializing ChromaDB client...")
+        try:
+            chroma_client = ChromaClient()
+            logger.info("ChromaDB client initialized")
+            
+            # Verify ChromaDB is healthy
+            if not chroma_client.is_healthy():
+                logger.error("ChromaDB health check failed")
+                raise Exception("ChromaDB is not healthy")
+        except Exception as e:
+            logger.error(f"ChromaDB initialization failed: {e}")
+            # Don't fail startup - allow app to start without ChromaDB
+            # User will see error when trying to use features
+            chroma_client = None
+            logger.warning("Starting without ChromaDB - features will be limited")
         
         # Initialize embedder (uses Ollama embedding model from environment variable)
         embedding_model = os.environ.get("EMBEDDING_MODEL", "")
@@ -82,36 +90,49 @@ async def lifespan(app: FastAPI):
             logger.warning("Please select and download an embedding model in the app settings")
             embedder = None
         else:
-            embedder = Embedder(
-                model_name=embedding_model,
-                batch_size=32,
-                ollama_host=ollama_host,
-                enable_cache=True,
-                cache_size=1000
-            )
-            logger.info(f"Embedder initialized with Ollama model: {embedding_model}")
+            try:
+                # Try to initialize embedder with a short timeout
+                # If it fails, we'll initialize it later
+                logger.info(f"Attempting to initialize embedder with model: {embedding_model}")
+                embedder = Embedder(
+                    model_name=embedding_model,
+                    batch_size=32,
+                    ollama_host=ollama_host,
+                    enable_cache=True,
+                    cache_size=1000
+                )
+                logger.info(f"Embedder initialized successfully with Ollama model: {embedding_model}")
+            except Exception as e:
+                logger.warning(f"Failed to initialize embedder during startup: {e}")
+                logger.warning("Embedder will be initialized on first use")
+                embedder = None
         
         # Initialize enhanced ingest pipeline (v2) - only if embedder is available
         if embedder:
-            ingest_pipeline = EnhancedIngestPipeline(
-                chroma_client=chroma_client,
-                embedder=embedder,
-                use_enhanced_extractors=True,
-                use_enhanced_chunker=True,
-                use_ocr=True,
-                validate_files=True
-            )
-            logger.info("Enhanced ingest pipeline initialized (v2)")
-            
-            # Initialize retriever
-            retriever = Retriever(
-                chroma_client=chroma_client,
-                embedder=embedder,
-                enable_cache=True,
-                cache_size=100,
-                cache_ttl=300
-            )
-            logger.info("Retriever initialized")
+            try:
+                ingest_pipeline = EnhancedIngestPipeline(
+                    chroma_client=chroma_client,
+                    embedder=embedder,
+                    use_enhanced_extractors=True,
+                    use_enhanced_chunker=True,
+                    use_ocr=True,
+                    validate_files=True
+                )
+                logger.info("Enhanced ingest pipeline initialized (v2)")
+                
+                # Initialize retriever
+                retriever = Retriever(
+                    chroma_client=chroma_client,
+                    embedder=embedder,
+                    enable_cache=True,
+                    cache_size=100,
+                    cache_ttl=300
+                )
+                logger.info("Retriever initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize ingest pipeline/retriever: {e}")
+                ingest_pipeline = None
+                retriever = None
         else:
             ingest_pipeline = None
             retriever = None
