@@ -11,6 +11,7 @@ import startup from "./preload/startup";
 import { searchAPI } from "./preload/search";
 import fileUpload from "./preload/fileUpload";
 import context from "./preload/context";
+import shell from "./preload/shell";
 
 const api: Window["api"] = {
   message,
@@ -25,6 +26,7 @@ const api: Window["api"] = {
   search: searchAPI,
   fileUpload,
   context,
+  shell,
 };
 
 contextBridge.exposeInMainWorld("api", api);

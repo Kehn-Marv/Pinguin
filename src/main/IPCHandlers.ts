@@ -60,6 +60,21 @@ class IPCHandlers {
     log("Registering IPC handlers");
     // Only register Ollama handlers - other handlers are registered by their respective modules
     this.registerOllamaHandlers();
+    this.registerShellHandlers();
+  }
+
+  private registerShellHandlers(): void {
+    ipcMain.handle("shell:openExternal", async (_event, url: string) => {
+      try {
+        const { shell } = await import("electron");
+        await shell.openExternal(url);
+        log(`Opened external URL: ${url}`);
+        return { success: true };
+      } catch (error: any) {
+        log(`Error opening external URL: ${error.message}`);
+        return { success: false, error: error.message };
+      }
+    });
   }
 
   private registerDocumentHandlers(): void {

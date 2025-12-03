@@ -31,6 +31,10 @@ export interface IStartupAPI {
   isReady: () => Promise<boolean>;
 }
 
+export interface IShellAPI {
+  openExternal: (url: string) => Promise<void>;
+}
+
 export interface IAPI {
   message: IMessageAPI;
   chat: IChatAPI;
@@ -44,6 +48,7 @@ export interface IAPI {
   search: ISearchAPI;
   fileUpload: IFileUploadAPI;
   context: IContextAPI;
+  shell: IShellAPI;
 }
 
 declare global {

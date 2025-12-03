@@ -40,10 +40,7 @@ jobs:
     
     - name: Verify binaries exist
       run: |
-        if (!(Test-Path "extraResources/ollama/win32-x64/ollama.exe")) {
-          Write-Error "Ollama x64 binary not found!"
-          exit 1
-        }
+        # Ollama check removed - users will download from ollama.com
         if (!(Test-Path "extraResources/tesseract/win32-x64/tesseract.exe")) {
           Write-Error "Tesseract x64 binary not found!"
           exit 1
@@ -123,10 +120,7 @@ jobs:
     
     - name: Verify binaries exist
       run: |
-        if (!(Test-Path "extraResources/ollama/win32-arm64/ollama.exe")) {
-          Write-Error "Ollama ARM64 binary not found!"
-          exit 1
-        }
+        # Ollama check removed - users will download from ollama.com
         if (!(Test-Path "extraResources/tesseract/win32-arm64/tesseract.exe")) {
           Write-Error "Tesseract ARM64 binary not found!"
           exit 1

@@ -61,8 +61,8 @@ const RequiresOllama = ({ children }: PropsType) => {
   };
 
   const handleOpenOllamaWebsite = () => {
-    // For now, just show the URL - we can add proper shell integration later
-    console.log("Open: https://ollama.com/download");
+    // Open Ollama download page in default browser
+    window.api.shell?.openExternal("https://ollama.com/download");
   };
 
   // Show children if Ollama is ready
@@ -126,8 +126,11 @@ const RequiresOllama = ({ children }: PropsType) => {
           <Typography variant="h5" gutterBottom color="warning.main">
             Ollama Not Found
           </Typography>
-          <Typography variant="body1" sx={{ mb: 3, textAlign: "center", maxWidth: 500 }}>
+          <Typography variant="body1" sx={{ mb: 2, textAlign: "center", maxWidth: 500 }}>
             Ollama is required to run this application. Please install Ollama and restart the app.
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 3, textAlign: "center", maxWidth: 500, color: "text.secondary" }}>
+            Download from: <strong>ollama.com/download</strong>
           </Typography>
           <Box sx={{ display: "flex", gap: 2 }}>
             <Button

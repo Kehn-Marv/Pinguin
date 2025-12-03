@@ -19,7 +19,7 @@ const config: ForgeConfig = {
     // Or will default to host architecture
     extraResource: [
       path.join(process.cwd(), "public", "icon.png"),
-      "./extraResources/ollama",
+      // Ollama removed - users will download from ollama.com
       "./extraResources/tesseract",
       "./extraResources/poppler",
       "./backend",
