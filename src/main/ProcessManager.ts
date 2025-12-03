@@ -29,7 +29,7 @@ class ProcessManager {
   private pythonBackend: ServiceConfig;
   private readonly OLLAMA_PORT_RANGE = { start: 11434, end: 11440 };
   private readonly PYTHON_PORT = 8000;
-  private readonly HEALTH_CHECK_TIMEOUT = 30000; // 30 seconds
+  private readonly HEALTH_CHECK_TIMEOUT = 60000; // 60 seconds (increased for slow machines)
   private readonly HEALTH_CHECK_INTERVAL = 1000; // 1 second
 
   private constructor() {
@@ -379,39 +379,53 @@ class ProcessManager {
         // Capture error details before killing process
         const errorDetails = (this.pythonBackend as any).lastError || "";
         const outputDetails = (this.pythonBackend as any).lastOutput || "";
+        const criticalError = (this.pythonBackend as any).criticalError || "";
+        const startupComplete = (this.pythonBackend as any).startupComplete || false;
         
         log("=== Python Backend Failed to Start ===");
-        log(`Error output: ${errorDetails}`);
-        log(`Standard output: ${outputDetails}`);
+        log(`Startup completed: ${startupComplete}`);
+        log(`Critical error: ${criticalError || "None detected"}`);
+        log(`Error output length: ${errorDetails.length} chars`);
+        log(`Standard output length: ${outputDetails.length} chars`);
         
         this.killProcess(this.pythonBackend);
         
-        // Analyze error and provide helpful message
-        let errorMessage = "Python backend failed health check";
+        // Determine user-friendly error message
         let userFriendlyMessage = "";
         
-        if (errorDetails.includes("ModuleNotFoundError") || errorDetails.includes("ImportError")) {
-          userFriendlyMessage = "Python dependencies are missing or corrupted. Please reinstall the application.";
-        } else if (errorDetails.includes("Errno 10048") || errorDetails.includes("address already in use")) {
-          userFriendlyMessage = "Port 8000 is already in use. Please close other applications and try again.";
-        } else if (errorDetails.includes("Permission denied") || errorDetails.includes("Access is denied")) {
-          userFriendlyMessage = "Permission denied. Try running Pinguin as Administrator.";
-        } else if (errorDetails.includes("ChromaDB") || errorDetails.includes("chromadb")) {
-          userFriendlyMessage = "Database initialization failed. Try restarting the application.";
-        } else if (errorDetails) {
-          userFriendlyMessage = "An error occurred during startup. Check the logs for details.";
+        if (criticalError) {
+          // Use the first critical error we detected
+          if (criticalError.includes("module import failed")) {
+            userFriendlyMessage = "Python dependencies are missing or corrupted. Please reinstall the application.";
+          } else if (criticalError.includes("Port 8000")) {
+            userFriendlyMessage = "Port 8000 is already in use. Please close other applications and try again.";
+          } else if (criticalError.includes("Permission denied")) {
+            userFriendlyMessage = "Permission denied. Try running Pinguin as Administrator.";
+          } else if (criticalError.includes("Database")) {
+            userFriendlyMessage = "Database initialization failed. Try deleting %APPDATA%\\Pinguin\\chroma_db and restarting.";
+          } else {
+            userFriendlyMessage = criticalError;
+          }
+        } else if (startupComplete) {
+          // Startup completed but health check still failed - likely a timing issue
+          userFriendlyMessage = "The backend started but is not responding. This may be a temporary issue - please try restarting the application.";
+        } else if (errorDetails.length === 0 && outputDetails.length === 0) {
+          // No output at all - process died immediately
+          userFriendlyMessage = "The Python backend failed to start. This is likely due to missing Visual C++ Runtime. Please install it from: https://aka.ms/vs/17/release/vc_redist.x64.exe";
         } else {
-          userFriendlyMessage = "The backend service failed to start. This may be due to missing dependencies or system configuration issues.";
+          // Generic fallback
+          userFriendlyMessage = "The backend service failed to start. Please check the logs at %APPDATA%\\Pinguin\\logs\\main.log for details.";
         }
         
-        errorMessage = userFriendlyMessage;
-        
-        // Add technical details to logs only
+        // Log full technical details
         if (errorDetails) {
-          log(`Technical details: ${errorDetails.substring(0, 1000)}`);
+          log(`Full error output:\n${errorDetails}`);
+        }
+        if (outputDetails) {
+          log(`Full standard output:\n${outputDetails}`);
         }
         
-        throw new Error(errorMessage);
+        throw new Error(userFriendlyMessage);
       }
     } catch (error: unknown) {
       this.pythonBackend.status = "crashed";
@@ -524,6 +538,8 @@ class ProcessManager {
       // Capture startup errors
       let startupError = "";
       let startupOutput = "";
+      let criticalError = ""; // First critical error encountered
+      let startupComplete = false;
       
       const pythonProcess = spawn(
         pythonPath,
@@ -540,6 +556,12 @@ class ProcessManager {
         const output = data.toString();
         startupOutput += output;
         log(`Python backend stdout: ${output}`);
+        
+        // Check if startup completed successfully
+        if (output.includes("Application startup complete")) {
+          startupComplete = true;
+          log("Python backend startup sequence completed successfully");
+        }
       });
 
       pythonProcess.stderr?.on("data", (data) => {
@@ -547,12 +569,21 @@ class ProcessManager {
         startupError += error;
         log(`Python backend stderr: ${error}`);
         
-        // Check for critical errors that indicate startup failure
-        if (error.includes("ModuleNotFoundError") || error.includes("ImportError")) {
-          log("CRITICAL: Python module import failed - dependencies may be missing");
-        }
-        if (error.includes("ChromaDB") || error.includes("chromadb")) {
-          log("WARNING: ChromaDB error detected");
+        // Capture first critical error
+        if (!criticalError) {
+          if (error.includes("ModuleNotFoundError") || error.includes("ImportError")) {
+            criticalError = "Python module import failed - dependencies may be missing";
+            log(`CRITICAL: ${criticalError}`);
+          } else if (error.includes("Errno 10048") || error.includes("address already in use")) {
+            criticalError = "Port 8000 is already in use";
+            log(`CRITICAL: ${criticalError}`);
+          } else if (error.includes("Permission denied") || error.includes("Access is denied")) {
+            criticalError = "Permission denied - try running as Administrator";
+            log(`CRITICAL: ${criticalError}`);
+          } else if (error.includes("ChromaDB") && error.includes("Error")) {
+            criticalError = "Database initialization failed";
+            log(`WARNING: ${criticalError}`);
+          }
         }
       });
 
@@ -579,6 +610,8 @@ class ProcessManager {
       // Store error output for later retrieval
       (this.pythonBackend as any).lastError = startupError;
       (this.pythonBackend as any).lastOutput = startupOutput;
+      (this.pythonBackend as any).criticalError = criticalError;
+      (this.pythonBackend as any).startupComplete = startupComplete;
       
       // Register with process monitor
       const processMonitor = getProcessMonitor();
@@ -689,14 +722,24 @@ class ProcessManager {
     timeout: number
   ): Promise<boolean> {
     const startTime = Date.now();
+    let lastLogTime = 0;
     
     while (Date.now() - startTime < timeout) {
       if (await this.checkHealth(url)) {
         return true;
       }
+      
+      // Log progress every 5 seconds
+      const elapsed = Date.now() - startTime;
+      if (elapsed - lastLogTime >= 5000) {
+        log(`Waiting for service health check... (${Math.round(elapsed / 1000)}s / ${timeout / 1000}s)`);
+        lastLogTime = elapsed;
+      }
+      
       await new Promise((resolve) => setTimeout(resolve, this.HEALTH_CHECK_INTERVAL));
     }
     
+    log(`Health check timed out after ${timeout / 1000} seconds`);
     return false;
   }
 
