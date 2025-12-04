@@ -25,7 +25,7 @@ Pinguin is an offline-first AI study companion built specifically for university
 - **Native Arm64 Performance**: Built and optimized specifically for Arm architecture, leveraging efficient instruction sets for faster inference
 - **On-Device AI**: All processing happens locally using Ollama's Arm-native builds—your data never leaves your device
 - **Energy Efficient**: Arm's power efficiency means longer battery life during study sessions
-- **Cross-Platform**: Runs on Windows on Arm, macOS (Apple Silicon), and Linux Arm devices
+- **Windows on Arm**: Optimized for Windows 11 on Arm devices (Snapdragon X Elite, Surface Pro X, etc.)
 
 ## Key Features
 
@@ -81,8 +81,8 @@ Pinguin leverages a modern, efficient tech stack optimized for Arm devices:
 ## Quick Start
 
 ### Prerequisites
-- **Arm-based Device**: Windows on Arm, macOS (Apple Silicon), or Linux Arm64
-- **Ollama**: Download from [ollama.com](https://ollama.com) (Arm builds available)
+- **Windows 11 on Arm**: Snapdragon X Elite, Surface Pro X, or other Arm64 Windows devices
+- **Ollama**: Download from [ollama.com](https://ollama.com) (Windows Arm64 build)
 - **4GB+ RAM**: Recommended for optimal performance
 - **5GB+ Storage**: For models and document storage
 
@@ -90,15 +90,12 @@ Pinguin leverages a modern, efficient tech stack optimized for Arm devices:
 
 1. **Download Pinguin**
    - Get the latest Arm64 installer from [GitHub Releases](https://github.com/Kehn-Marv/Pinguin/releases)
-   - For Windows on Arm: `Pinguin-Setup-1.0.0-arm64.exe`
+   - Download: `Pinguin-Setup-1.0.0-arm64.exe`
 
 2. **Install Ollama**
-   ```bash
-   # Visit ollama.com and download the Arm version for your OS
-   # Windows on Arm: Download and run the installer
-   # macOS (Apple Silicon): brew install ollama
-   # Linux Arm64: curl -fsSL https://ollama.com/install.sh | sh
-   ```
+   - Visit [ollama.com](https://ollama.com)
+   - Download Ollama for Windows (ARM64)
+   - Run the installer
 
 3. **Run Pinguin Installer**
    - Double-click the installer and follow the prompts
@@ -115,18 +112,20 @@ Pinguin leverages a modern, efficient tech stack optimized for Arm devices:
 
 ## Building from Source
 
-Detailed build instructions for Arm devices are available in [docs/ARM_BUILD_GUIDE.md](docs/ARM_BUILD_GUIDE.md).
+Detailed build instructions are available in [docs/ARM_BUILD_GUIDE.md](docs/ARM_BUILD_GUIDE.md).
 
-```bash
+```powershell
 # Clone the repository
 git clone https://github.com/Kehn-Marv/Pinguin.git
 cd Pinguin
 
 # Install dependencies
 npm install
-cd backend && pip install -r requirements.txt && cd ..
+cd backend
+pip install -r requirements.txt
+cd ..
 
-# Build for Arm64
+# Build for Windows on Arm
 npm run make
 ```
 
@@ -143,18 +142,20 @@ See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for details and workarounds.
 
 ## Documentation
 
-- [Technical Documentation](docs/TECHNICAL.md) - Architecture and implementation details
-- [Arm Build Guide](docs/ARM_BUILD_GUIDE.md) - Building and optimizing for Arm devices
+- [Setup Instructions](SETUP_INSTRUCTIONS.md) - Step-by-step installation guide
+- [Project Overview](PROJECT_OVERVIEW.md) - Complete project summary and architecture
+- [Technical Documentation](docs/TECHNICAL.md) - Detailed technical implementation
+- [Arm Build Guide](docs/ARM_BUILD_GUIDE.md) - Building from source on Windows on Arm
 - [API Reference](docs/API.md) - Backend API documentation
 - [Known Issues](KNOWN_ISSUES.md) - Current limitations and workarounds
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute to Pinguin
 
-## Performance on Arm
+## Performance on Windows on Arm
 
 Pinguin is optimized for Arm architecture and delivers excellent performance:
 
-- **Fast Startup**: < 5 seconds on modern Arm devices
-- **Quick Inference**: 20-50 tokens/second with 3B models on Arm CPUs
+- **Fast Startup**: < 5 seconds on Snapdragon X Elite and similar devices
+- **Quick Inference**: 25-40 tokens/second with 3B models on Arm CPUs
 - **Efficient Memory**: Runs comfortably in 4GB RAM
 - **Low Power**: Extended battery life thanks to Arm efficiency
 - **Native Builds**: All components compiled for Arm64

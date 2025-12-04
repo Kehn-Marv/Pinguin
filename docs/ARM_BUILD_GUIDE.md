@@ -1,37 +1,21 @@
-# Building Pinguin for Arm Devices
+# Building Pinguin for Windows on Arm
 
-This guide provides step-by-step instructions for building and running Pinguin on Arm-based devices, specifically optimized for the Arm AI Developer Challenge 2025.
+This guide provides step-by-step instructions for building and running Pinguin on Windows on Arm devices, specifically optimized for the Arm AI Developer Challenge 2025.
 
 ## Prerequisites
 
 ### Hardware Requirements
-- **Arm64 Device**: Windows on Arm, macOS (Apple Silicon), or Linux Arm64
+- **Windows on Arm Device**: Snapdragon X Elite, Surface Pro X, or similar
 - **RAM**: Minimum 4GB, 8GB+ recommended
 - **Storage**: 10GB free space (5GB for models, 5GB for documents)
-- **CPU**: Any modern Arm CPU (Snapdragon, Apple Silicon, etc.)
+- **CPU**: Modern Arm64 processor (Snapdragon X Elite, SQ1, SQ2, etc.)
 
 ### Software Requirements
-
-**Windows on Arm**
 - Windows 11 on Arm (build 22000 or later)
 - Visual Studio 2022 with C++ build tools (Arm64)
 - Node.js 18+ (Arm64 build)
 - Python 3.10+ (Arm64 build)
 - Git for Windows (Arm64)
-
-**macOS (Apple Silicon)**
-- macOS 12.0 or later
-- Xcode Command Line Tools
-- Node.js 18+ (install via Homebrew)
-- Python 3.10+ (install via Homebrew)
-- Homebrew package manager
-
-**Linux Arm64**
-- Ubuntu 22.04 LTS or equivalent
-- GCC/G++ 11+ for Arm64
-- Node.js 18+ (Arm64)
-- Python 3.10+ (Arm64)
-- Build essentials
 
 ## Quick Start for Judges
 
@@ -39,49 +23,21 @@ If you're a hackathon judge testing Pinguin, follow these simplified steps:
 
 ### 1. Install Ollama
 
-**Windows on Arm**
 1. Visit [ollama.com](https://ollama.com)
 2. Download "Ollama for Windows (ARM64)"
 3. Run the installer
 4. Ollama will start automatically in the background
 
-**macOS (Apple Silicon)**
-```bash
-brew install ollama
-ollama serve &
-```
-
-**Linux Arm64**
-```bash
-curl -fsSL https://ollama.com/install.sh | sh
-ollama serve &
-```
-
 ### 2. Download Pinguin Installer
 
 1. Go to [Pinguin Releases](https://github.com/Kehn-Marv/Pinguin/releases)
-2. Download the Arm64 installer for your platform:
-   - Windows: `Pinguin-Setup-1.0.0-arm64.exe`
-   - macOS: `Pinguin-1.0.0-arm64.dmg`
-   - Linux: `Pinguin-1.0.0-arm64.AppImage`
+2. Download `Pinguin-Setup-1.0.0-arm64.exe`
 
 ### 3. Install Pinguin
 
-**Windows**
-- Double-click `Pinguin-Setup-1.0.0-arm64.exe`
-- Follow the installation wizard
-- Launch Pinguin from Start Menu
-
-**macOS**
-- Open `Pinguin-1.0.0-arm64.dmg`
-- Drag Pinguin to Applications folder
-- Launch from Applications
-
-**Linux**
-```bash
-chmod +x Pinguin-1.0.0-arm64.AppImage
-./Pinguin-1.0.0-arm64.AppImage
-```
+1. Double-click `Pinguin-Setup-1.0.0-arm64.exe`
+2. Follow the installation wizard
+3. Launch Pinguin from Start Menu or desktop shortcut
 
 ### 4. First-Run Setup
 
@@ -219,36 +175,18 @@ npm run make
 
 This creates a distributable package in the `out/` directory.
 
-**Platform-Specific Builds**
+**Build for Windows on Arm**
 
-*Windows on Arm*
-```bash
+```powershell
 npm run make -- --arch=arm64 --platform=win32
-```
-
-*macOS (Apple Silicon)*
-```bash
-npm run make -- --arch=arm64 --platform=darwin
-```
-
-*Linux Arm64*
-```bash
-npm run make -- --arch=arm64 --platform=linux
 ```
 
 ### 6. Verify Build
 
 After building, test the application:
 
-```bash
-# Windows
+```powershell
 .\out\Pinguin-win32-arm64\Pinguin.exe
-
-# macOS
-open out/Pinguin-darwin-arm64/Pinguin.app
-
-# Linux
-./out/Pinguin-linux-arm64/Pinguin
 ```
 
 ## Arm-Specific Optimizations

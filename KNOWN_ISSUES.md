@@ -184,13 +184,16 @@ This document outlines current known issues and limitations in Pinguin v1.0.0. W
 
 ---
 
-### 4. No Mobile Version
+### 4. Windows on Arm Only
 
-**Limitation**: Desktop-only (Windows, macOS, Linux on Arm).
+**Limitation**: Currently supports Windows 11 on Arm only.
 
-**Rationale**: Initial focus on desktop Arm devices for hackathon.
+**Rationale**: Initial release focused on Windows on Arm for the hackathon.
 
-**Future**: Mobile companion app (iOS/Android) planned for v2.0.
+**Future**: 
+- macOS (Apple Silicon) support planned for v1.2
+- Linux Arm64 support planned for v1.2
+- Mobile companion app (iOS/Android) planned for v2.0
 
 ---
 
