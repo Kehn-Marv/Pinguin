@@ -1,0 +1,40 @@
+/* Global Scrollbar Styles */
+
+/* Scrollbar width */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+/* Scrollbar track */
+*::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* Scrollbar thumb - will be overridden by theme-specific styles */
+*::-webkit-scrollbar-thumb {
+  background-color: #B0B0B0;
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #D0D0D0;
+}
+
+/* Dark mode scrollbar - using data attribute */
+[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  background-color: #B0B0B0 !important;
+}
+
+[data-theme="dark"] *::-webkit-scrollbar-thumb:hover {
+  background-color: #D0D0D0 !important;
+}
+
+/* Light mode scrollbar */
+[data-theme="light"] *::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="light"] *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
